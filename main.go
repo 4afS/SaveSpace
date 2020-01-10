@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/cheggaaa/pb"
 	"github.com/nlopes/slack"
 	"io/ioutil"
 	"log"
@@ -36,7 +37,7 @@ func main() {
 	api := slack.New(token)
 
 	param := slack.ListFilesParameters{
-		Limit: 1000,
+		Limit: 100,
 	}
 
 	files, _, err := api.ListFiles(param)
@@ -45,11 +46,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	bar := pb.StartNew(len(files))
+
 	var wg sync.WaitGroup
 	for _, file := range files {
 		wg.Add(1)
 		go func(f slack.File) {
 			defer wg.Done()
+			defer bar.Increment()
+
 			if isNeededChannelID(f) {
 				err := DL(api, f.URLPrivateDownload, genFilename(f))
 				if err != nil {
@@ -59,6 +64,7 @@ func main() {
 		}(file)
 	}
 	wg.Wait()
+	bar.Finish()
 }
 
 func genFilename(f slack.File) string {
@@ -68,9 +74,7 @@ func genFilename(f slack.File) string {
 }
 
 func isNeededChannelID(f slack.File) bool {
-	needed := []string{
-		"CJG26EM5W",
-	}
+	needed := []string{}
 	for _, c := range needed {
 		if elemStr(f.Channels, c) {
 			return true
