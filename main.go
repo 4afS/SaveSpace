@@ -52,8 +52,8 @@ func main() {
 	for _, file := range files {
 		wg.Add(1)
 		go func(f slack.File) {
-			defer wg.Done()
 			defer bar.Increment()
+			defer wg.Done()
 
 			if isNeededChannelID(f) {
 				err := DL(api, f.URLPrivateDownload, genFilename(f))
